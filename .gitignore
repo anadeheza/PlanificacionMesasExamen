@@ -1,5 +1,19 @@
-#ignore csv files (dataset)
+# Dataset y consigna
 *.csv
-
-#ignore pdf files (consigna)
 *.pdf
+
+# Entorno e intérprete
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Streamlit / modelos entrenados
+.streamlit/secrets.toml
+*.joblib
+*.pkl
