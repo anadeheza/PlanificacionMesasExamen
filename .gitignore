@@ -1,2 +1,5 @@
 #ignore csv files (dataset)
 *.csv
+
+#ignore pdf files (consigna)
+*.pdf
