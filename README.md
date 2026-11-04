@@ -75,6 +75,7 @@ Escribe `dataset_mesas_examen.csv` en la raíz del repo.
 
 Recurso | Fuente
 --------|--------
+Informe de Trabajo | [INFORME.md](INFORME.md)
 
 ## Fuentes
 
