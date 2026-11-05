@@ -2,6 +2,9 @@
 *.csv
 *.pdf
 
+# Apuntes personales (no van al repo)
+conceptos.md
+
 # Entorno e intérprete
 .venv/
 venv/
