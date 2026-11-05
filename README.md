@@ -71,6 +71,21 @@ python dataset.py
 
 Escribe `dataset_mesas_examen.csv` en la raíz del repo.
 
+### Entrenar el modelo de conflictos
+
+Se usa **regresión lineal** (no clasificación): hay que estimar *cuántos* estudiantes se ven afectados, no solo si hay conflicto. Ese número después se corta con un umbral para armar el grafo.
+
+- Features: `cant_estudiantes_compartidos_historico`, `mismo_anio`, `misma_carrera`
+- Target: `cant_estudiantes_afectados`
+- Split 80/20 con semilla `42`
+- Métricas (MAE, RMSE, R²) calculadas solo sobre test
+
+```bash
+python -m backend.modelo
+```
+
+El archivo `.joblib` no se sube a git (está en `.gitignore`). En otra máquina se reentrena con el mismo comando.
+
 ## Indices
 
 Recurso | Fuente
