@@ -16,7 +16,6 @@ umbral = st.sidebar.slider(
     step=0.05,
     help="Issue #18: al cambiar el umbral se recalculan el grafo y los turnos.",
 )
-st.sidebar.metric("Turnos necesarios", "—")
 st.sidebar.metric("Aristas de conflicto", "—")
 
 tab_grafo, tab_cronograma = st.tabs(["Grafo de conflictos", "Cronograma"])
@@ -42,4 +41,11 @@ with tab_cronograma:
         ],
     }
     st.metric("Turnos necesarios", len(cronograma))
-    st.write(cronograma)
+    columnas = st.columns(len(cronograma))
+    for i, (turno, materias) in enumerate(sorted(cronograma.items())):
+        with columnas[i]:
+            st.subheader(f"Turno {turno + 1}")
+            for materia in materias:
+                st.markdown(f"**{materia['nombre']}**")
+                st.caption(f"{materia['carrera']} · Año {materia['anio']}")
+    st.sidebar.metric("Turnos necesarios", len(cronograma))
