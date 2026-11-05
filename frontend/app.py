@@ -28,4 +28,18 @@ with tab_grafo:
 
 with tab_cronograma:
     st.subheader("Cronograma por turno")
-    st.info("Issue #17: grilla o calendario con las materias que se rinden en cada turno.")
+    cronograma = {
+        0: [
+            {"nombre": "Álgebra I", "carrera": "Informática", "anio": 1},
+            {"nombre": "Química", "carrera": "Industrial", "anio": 1},
+        ],
+        1: [
+            {"nombre": "Programación I", "carrera": "Informática", "anio": 1},
+        ],
+        2: [
+            {"nombre": "Análisis Matemático", "carrera": "Informática", "anio": 1},
+            {"nombre": "Física I", "carrera": "Industrial", "anio": 1},
+        ],
+    }
+    st.metric("Turnos necesarios", len(cronograma))
+    st.write(cronograma)
