@@ -1,4 +1,5 @@
 import streamlit as st
+COLORES_TURNO = ["#4C78A8", "#F58518", "#54A24B", "#BF8FF0", "#B279A2"]
 
 st.set_page_config(
     page_title="Planificación de mesas de examen",
@@ -44,7 +45,8 @@ with tab_cronograma:
     columnas = st.columns(len(cronograma))
     for i, (turno, materias) in enumerate(sorted(cronograma.items())):
         with columnas[i]:
-            st.subheader(f"Turno {turno + 1}")
+            color = COLORES_TURNO[turno % len(COLORES_TURNO)]
+            st.markdown(f"<h3 style='border-bottom: 4px solid {color};'>Turno {turno}</h3>", unsafe_allow_html=True,)
             for materia in materias:
                 st.markdown(f"**{materia['nombre']}**")
                 st.caption(f"{materia['carrera']} · Año {materia['anio']}")
