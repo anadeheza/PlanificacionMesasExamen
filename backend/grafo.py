@@ -111,10 +111,7 @@ if __name__ == "__main__":
 
     ruta = Path(__file__).resolve().parent.parent / "dataset_mesas_examen.csv"
     pares = pd.read_csv(ruta)
-    umbral_bajo = 10
-    umbral_alto = 40
-    grafo_bajo = construir_grafo(pares, umbral_bajo)
-    grafo_alto = construir_grafo(pares, umbral_alto)
-    print("nodos:", grafo_bajo.number_of_nodes())
-    print(f"aristas con umbral {umbral_bajo}:", grafo_bajo.number_of_edges())
-    print(f"aristas con umbral {umbral_alto}:", grafo_alto.number_of_edges())
+    umbral = 10
+    grafo = construir_grafo(pares, umbral)
+    print("nodos:", grafo.number_of_nodes())
+    print(f"aristas con umbral {umbral}:", grafo.number_of_edges())
