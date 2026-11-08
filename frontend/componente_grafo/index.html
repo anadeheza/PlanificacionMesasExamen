@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body { margin: 0; background: #f7f8fa; }
+    svg { width: 100%; height: 500px; display: block; background: #f7f8fa; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <svg id="grafo" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg"
+       role="img" aria-label="Grafo de conflictos" preserveAspectRatio="xMidYMid meet"></svg>
+  <script>
+    const DURACION = 560;
+
+    function listo() {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: "streamlit:componentReady",
+        apiVersion: 1
+      }, "*");
+    }
+
+    function alto(px) {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: "streamlit:setFrameHeight",
+        height: px
+      }, "*");
+    }
+
+    function suave(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function mezclar(origen, destino, t) {
+      return origen + (destino - origen) * t;
+    }
+
+    function color(origen, destino, t) {
+      const a = parseInt(origen.slice(1), 16);
+      const b = parseInt(destino.slice(1), 16);
+      const canales = [16, 8, 0].map((desplazamiento) => {
+        const desde = (a >> desplazamiento) & 255;
+        const hasta = (b >> desplazamiento) & 255;
+        return Math.round(mezclar(desde, hasta, t)).toString(16).padStart(2, "0");
+      });
+      return "#" + canales.join("");
+    }
+
+    function angulo(origen, destino, t) {
+      let delta = destino - origen;
+      while (delta > 180) delta -= 360;
+      while (delta < -180) delta += 360;
+      return origen + delta * t;
+    }
+
+    function porId(lista) {
+      return Object.fromEntries(lista.map((item) => [item.id, item]));
+    }
+
+    function mezclarEscena(desde, hasta, t) {
+      const nodosDesde = porId(desde.nodos);
+      const aristasDesde = porId(desde.aristas);
+      return {
+        nodos: hasta.nodos.map((nodo) => {
+          const origen = nodosDesde[nodo.id] || nodo;
+          return {
+            ...nodo,
+            x: mezclar(origen.x, nodo.x, t),
+            y: mezclar(origen.y, nodo.y, t),
+            color: color(origen.color, nodo.color, t)
+          };
+        }),
+        aristas: hasta.aristas.map((arista) => {
+          const origen = aristasDesde[arista.id] || arista;
+          return {
+            ...arista,
+            x1: mezclar(origen.x1, arista.x1, t),
+            y1: mezclar(origen.y1, arista.y1, t),
+            x2: mezclar(origen.x2, arista.x2, t),
+            y2: mezclar(origen.y2, arista.y2, t),
+            mx: mezclar(origen.mx, arista.mx, t),
+            my: mezclar(origen.my, arista.my, t),
+            angulo: angulo(origen.angulo, arista.angulo, t),
+            opacidad: mezclar(origen.opacidad, arista.opacidad, t)
+          };
+        })
+      };
+    }
+
+    const svg = document.getElementById("grafo");
+    let armado = false;
+
+    function asegurar(escena) {
+      if (armado) return;
+      escena.aristas.forEach((arista) => {
+        const linea = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        linea.setAttribute("data-arista", arista.id);
+        linea.setAttribute("stroke", "#5c6770");
+        linea.setAttribute("stroke-width", "2");
+        linea.setAttribute("stroke-linecap", "butt");
+        svg.appendChild(linea);
+      });
+      escena.nodos.forEach((nodo) => {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("data-nodo", nodo.id);
+        rect.setAttribute("width", nodo.w);
+        rect.setAttribute("height", nodo.h);
+        rect.setAttribute("rx", "6");
+        rect.setAttribute("fill", "#ffffff");
+        rect.setAttribute("stroke-width", "3");
+        svg.appendChild(rect);
+        const nombre = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        nombre.setAttribute("data-nombre", nodo.id);
+        nombre.setAttribute("text-anchor", "middle");
+        nombre.setAttribute("dominant-baseline", "middle");
+        nombre.setAttribute("font-size", "15");
+        nombre.setAttribute("font-family", "sans-serif");
+        nombre.setAttribute("fill", "#1f2933");
+        nombre.textContent = nodo.nombre;
+        svg.appendChild(nombre);
+      });
+      escena.aristas.forEach((arista) => {
+        const peso = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        peso.setAttribute("data-peso", arista.id);
+        peso.setAttribute("x", "0");
+        peso.setAttribute("y", "-5");
+        peso.setAttribute("text-anchor", "middle");
+        peso.setAttribute("font-size", "14");
+        peso.setAttribute("font-weight", "600");
+        peso.setAttribute("font-family", "sans-serif");
+        peso.setAttribute("fill", "#1f2933");
+        peso.textContent = Number(arista.peso).toFixed(2);
+        svg.appendChild(peso);
+      });
+      armado = true;
+    }
+
+    function aplicar(escena) {
+      asegurar(escena);
+      escena.nodos.forEach((nodo) => {
+        const rect = svg.querySelector('[data-nodo="' + nodo.id + '"]');
+        rect.setAttribute("x", (nodo.x - nodo.w / 2).toFixed(1));
+        rect.setAttribute("y", (nodo.y - nodo.h / 2).toFixed(1));
+        rect.setAttribute("stroke", nodo.color);
+        const nombre = svg.querySelector('[data-nombre="' + nodo.id + '"]');
+        nombre.setAttribute("x", nodo.x.toFixed(1));
+        nombre.setAttribute("y", nodo.y.toFixed(1));
+      });
+      escena.aristas.forEach((arista) => {
+        const linea = svg.querySelector('[data-arista="' + arista.id + '"]');
+        linea.setAttribute("x1", arista.x1.toFixed(1));
+        linea.setAttribute("y1", arista.y1.toFixed(1));
+        linea.setAttribute("x2", arista.x2.toFixed(1));
+        linea.setAttribute("y2", arista.y2.toFixed(1));
+        linea.setAttribute("opacity", arista.opacidad.toFixed(3));
+        const peso = svg.querySelector('[data-peso="' + arista.id + '"]');
+        peso.setAttribute(
+          "transform",
+          "translate(" + arista.mx.toFixed(1) + "," + arista.my.toFixed(1) + ") rotate(" + arista.angulo.toFixed(1) + ")"
+        );
+        peso.setAttribute("opacity", arista.opacidad.toFixed(3));
+      });
+    }
+
+    let actual = null;
+    let animacion = 0;
+    const reducir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function mostrar(escena) {
+      if (!actual || reducir) {
+        actual = escena;
+        aplicar(escena);
+        return;
+      }
+      const origen = JSON.parse(JSON.stringify(actual));
+      const destino = escena;
+      const id = ++animacion;
+      const inicio = performance.now();
+      function paso(ahora) {
+        if (id !== animacion) return;
+        const t = Math.min(1, (ahora - inicio) / DURACION);
+        actual = mezclarEscena(origen, destino, suave(t));
+        aplicar(actual);
+        if (t < 1) requestAnimationFrame(paso);
+      }
+      requestAnimationFrame(paso);
+    }
+
+    window.addEventListener("message", (event) => {
+      if (!event.data || event.data.type !== "streamlit:render") return;
+      const escena = event.data.args && event.data.args.escena;
+      if (!escena) return;
+      mostrar(escena);
+      alto(520);
+    });
+
+    listo();
+    alto(520);
+  </script>
+</body>
+</html>
