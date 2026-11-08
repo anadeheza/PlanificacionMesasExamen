@@ -26,30 +26,6 @@ GROSOR_ARISTA = 2
 ALTO_NODO = 46
 
 
-def datos_mock():
-    """Pares de ejemplo, con una materia que no tiene ningún conflicto."""
-    materias = pd.DataFrame(
-        [
-            {"id": "ALG", "nombre": "Álgebra I", "carrera": "Informática", "anio": 1},
-            {"id": "PROG", "nombre": "Programación I", "carrera": "Informática", "anio": 1},
-            {"id": "AM", "nombre": "Análisis Matemático", "carrera": "Informática", "anio": 1},
-            {"id": "FIS", "nombre": "Física I", "carrera": "Industrial", "anio": 1},
-            {"id": "QUI", "nombre": "Química", "carrera": "Industrial", "anio": 1},
-            {"id": "ELE", "nombre": "Electiva", "carrera": "Informática", "anio": 3},
-        ]
-    )
-    pares = pd.DataFrame(
-        [
-            {"materia_id_1": "ALG", "materia_id_2": "PROG", "prediccion": 0.90},
-            {"materia_id_1": "ALG", "materia_id_2": "AM", "prediccion": 0.75},
-            {"materia_id_1": "PROG", "materia_id_2": "AM", "prediccion": 0.60},
-            {"materia_id_1": "FIS", "materia_id_2": "QUI", "prediccion": 0.45},
-            {"materia_id_1": "AM", "materia_id_2": "FIS", "prediccion": 0.30},
-        ]
-    )
-    return materias, pares
-
-
 def mostrar_grafo(grafo, colores, aristas, paleta=None):
     """Muestra el grafo en un componente que sigue vivo entre un umbral y otro.
 

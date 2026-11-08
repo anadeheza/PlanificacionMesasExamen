@@ -1,30 +1,33 @@
-"""Carga del catálogo de materias y de los pares de conflicto.
+"""Carga del catálogo de materias y de los pares de conflicto."""
 
-Trabajo correspondiente a la issue #7.
-"""
 from pathlib import Path
+
 import pandas as pd
 
+ROOT = Path(__file__).resolve().parent.parent
+RUTA_MATERIAS = ROOT / "materias.csv"
+RUTA_PARES = ROOT / "dataset_mesas_examen.csv"
+
+
 def load_materias():
-    """Devuelve el catálogo de materias (nodos del grafo)."""
-    ruta = Path(__file__).resolve().parent.parent / "materias.csv"
-    return pd.read_csv(ruta, encoding="utf-8")
+    """Catálogo de nodos: id, nombre, carrera, año."""
+    return pd.read_csv(RUTA_MATERIAS, encoding="utf-8")
 
 
 def load_pares():
-    """Devuelve el dataset de pares de materias."""
-    ruta = Path(__file__).resolve().parent.parent / "dataset_mesas_examen.csv"
-    df = pd.read_csv(ruta, encoding="utf-8")
+    """Pares de materias con las columnas del enunciado."""
+    df = pd.read_csv(RUTA_PARES, encoding="utf-8")
     for col in ("mismo_anio", "misma_carrera", "hubo_conflicto"):
         df[col] = (
             df[col].astype(str).str.lower().map({"true": True, "false": False})
         )
     return df
 
+
 if __name__ == "__main__":
-      materias = load_materias()
-      pares = load_pares()
-      print("Materias:", materias.shape, materias.columns.tolist())
-      print(materias.head())
-      print("Pares:", pares.shape, pares.columns.tolist())
-      print(pares.head())
+    materias = load_materias()
+    pares = load_pares()
+    print("Materias:", materias.shape, materias.columns.tolist())
+    print(materias.head())
+    print("Pares:", pares.shape, pares.columns.tolist())
+    print(pares.head())

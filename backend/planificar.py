@@ -1,21 +1,32 @@
-"""Orquesta modelo, grafo y coloreo para un umbral dado.
+"""Orquesta modelo, grafo y coloreo para un umbral dado."""
 
-Trabajo correspondiente a la issue #15.
-"""
-from backend.datos import load_materias, load_pares
-from backend.modelo import predecir
-from backend.grafo import construir_grafo
 from backend.coloreo import colorear
+from backend.datos import load_materias, load_pares
+from backend.grafo import construir_grafo
+from backend.modelo import predecir
 
 
 def planificar(umbral):
-    """Devuelve nodos, aristas, cronograma y cantidad de turnos."""
-    pares = load_pares()
-    pares = pares.copy()
+    """Predice conflictos, arma el grafo, colorea y arma el cronograma."""
+    pares = load_pares().copy()
     pares["prediccion"] = predecir(pares)
     materias = load_materias()
     grafo = construir_grafo(pares, umbral, materias, columna="prediccion")
     colores, n_turnos = colorear(grafo)
+    nodos = _nodos(grafo, colores)
+    return {
+        "nodos": nodos,
+        "aristas": _aristas(grafo),
+        "cronograma": _cronograma(nodos),
+        "cantidad_turnos": n_turnos,
+        "umbral": umbral,
+        "grafo": grafo,
+        "colores": colores,
+        "pares": pares,
+    }
+
+
+def _nodos(grafo, colores):
     nodos = []
     for materia_id, datos in grafo.nodes(data=True):
         nodos.append(
@@ -27,6 +38,10 @@ def planificar(umbral):
                 "turno": colores[materia_id],
             }
         )
+    return nodos
+
+
+def _aristas(grafo):
     aristas = []
     for m1, m2, datos in grafo.edges(data=True):
         aristas.append(
@@ -36,27 +51,23 @@ def planificar(umbral):
                 "peso": datos.get("peso"),
             }
         )
+    return aristas
+
+
+def _cronograma(nodos):
     cronograma = {}
     for nodo in nodos:
         cronograma.setdefault(nodo["turno"], []).append(nodo)
-    return {
-        "nodos": nodos,
-        "aristas": aristas,
-        "cronograma": cronograma,
-        "cantidad_turnos": n_turnos,
-        "umbral": umbral,
-        "grafo": grafo,
-        "colores": colores,
-        "pares": pares,
-    }
+    for materias in cronograma.values():
+        materias.sort(key=lambda materia: materia["nombre"])
+    return dict(sorted(cronograma.items()))
 
 
 if __name__ == "__main__":
     resultado = planificar(20)
-    print("claves:", resultado.keys())
+    print("claves:", list(resultado.keys()))
     print("nodos:", len(resultado["nodos"]))
     print("aristas:", len(resultado["aristas"]))
     print("turnos:", resultado["cantidad_turnos"])
     print("umbral:", resultado["umbral"])
-    print("materias en turno 0:",
-len(resultado["cronograma"].get(0, [])))
+    print("materias en turno 0:", len(resultado["cronograma"].get(0, [])))
