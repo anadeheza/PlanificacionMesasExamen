@@ -13,18 +13,47 @@ def planificar(umbral):
     pares = load_pares()
     pares = pares.copy()
     pares["prediccion"] = predecir(pares)
-    print("Umbral recibido:", umbral)
-    print("Predicciones (estudiantes afectados):")
-    print(pares["prediccion"].describe())
     materias = load_materias()
     grafo = construir_grafo(pares, umbral, materias, columna="prediccion")
     colores, n_turnos = colorear(grafo)
-    print("Nodos:", grafo.number_of_nodes())
-    print("Aristas:", grafo.number_of_edges())
-    print("Turnos:", n_turnos)
+    nodos = []
+    for materia_id, datos in grafo.nodes(data=True):
+        nodos.append(
+            {
+                "id": materia_id,
+                "nombre": datos.get("nombre", materia_id),
+                "carrera": datos.get("carrera", ""),
+                "anio": datos.get("año", datos.get("anio", "")),
+                "turno": colores[materia_id],
+            }
+        )
+    aristas = []
+    for m1, m2, datos in grafo.edges(data=True):
+        aristas.append(
+            {
+                "materia_id_1": m1,
+                "materia_id_2": m2,
+                "peso": datos.get("peso"),
+            }
+        )
+    cronograma = {}
+    for nodo in nodos:
+        cronograma.setdefault(nodo["turno"], []).append(nodo)
+    return {
+        "nodos": nodos,
+        "aristas": aristas,
+        "cronograma": cronograma,
+        "cantidad_turnos": n_turnos,
+        "umbral": umbral,
+    }
+
 
 if __name__ == "__main__":
-    print("--- umbral 5 ---")
-    planificar(5)
-    print("--- umbral 40 ---")
-    planificar(40)
+    resultado = planificar(20)
+    print("claves:", resultado.keys())
+    print("nodos:", len(resultado["nodos"]))
+    print("aristas:", len(resultado["aristas"]))
+    print("turnos:", resultado["cantidad_turnos"])
+    print("umbral:", resultado["umbral"])
+    print("materias en turno 0:",
+len(resultado["cronograma"].get(0, [])))
