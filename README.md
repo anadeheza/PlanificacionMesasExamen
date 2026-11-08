@@ -1,18 +1,18 @@
 # Planificación de mesas de examen
 
-Sistema que estima conflictos entre pares de materias y arma un cronograma de mesas con la menor cantidad de turnos posible, combinando un **modelo predictivo** y **coloreo de grafos**.
-
-Flujo:
-
-1. El modelo estima cuántos estudiantes se verían afectados si dos materias rinden juntas.
-2. Con un **umbral** se decide qué pares son aristas del grafo de conflictos.
-3. Un **coloreo greedy** (Welsh-Powell) asigna un turno a cada materia: dos materias en conflicto no comparten color.
-4. La interfaz muestra el grafo, el cronograma y deja cambiar el umbral.
+Sistema que estima la cantidad de alumnos afectados por tener pares de materias que se rinden a la vez y arma un cronograma de mesas con la menor cantidad de turnos posible, combinando un **modelo predictivo** y **coloreo de grafos**.
 
 ## Integrantes
 
 - Ana Deheza
 - Julieta Segovia
+
+## Flujo
+
+1. El modelo estima cuántos estudiantes se verían afectados si dos materias rinden en el mismo turno.
+2. Con un **umbral** se decide qué pares son aristas del grafo de conflictos.
+3. Un **coloreo greedy** (Welsh-Powell) asigna un turno a cada materia: dos materias en conflicto no comparten color.
+4. La interfaz muestra el grafo, el cronograma y deja cambiar el umbral.
 
 ## Estructura
 
@@ -83,7 +83,7 @@ Columnas de los pares:
 
 | Columna | Uso |
 |---------|-----|
-| `materia_id_1`, `materia_id_2` | par |
+| `materia_id_1`, `materia_id_2` | par de materias |
 | `cant_estudiantes_compartidos_historico` | feature |
 | `mismo_anio`, `misma_carrera` | features |
 | `cant_estudiantes_afectados` | target (regresión) |
