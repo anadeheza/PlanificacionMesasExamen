@@ -45,6 +45,9 @@ def planificar(umbral):
         "cronograma": cronograma,
         "cantidad_turnos": n_turnos,
         "umbral": umbral,
+        "grafo": grafo,
+        "colores": colores,
+        "pares": pares,
     }
 
 
