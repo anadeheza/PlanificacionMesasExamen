@@ -9,26 +9,11 @@ if str(RAIZ / "frontend") not in sys.path:
 
 import streamlit as st
 
-from backend.coloreo import colorear
-from backend.grafo import construir_grafo
-from visualizar_grafo import PALETA_TURNO, datos_mock, mostrar_grafo
+from visualizar_grafo import PALETA_TURNO, mostrar_grafo
+from backend.planificar import planificar
+
 
 COLORES_TURNO = PALETA_TURNO
-
-
-def _cronograma(catalogo, colores):
-    """Agrupa las materias por el turno que les asignó el coloreo."""
-    filas = {fila["id"]: fila for fila in catalogo.to_dict(orient="records")}
-    grupos = {}
-    for materia_id, turno in colores.items():
-        fila = filas.get(
-            materia_id,
-            {"nombre": str(materia_id), "carrera": "", "anio": ""},
-        )
-        grupos.setdefault(int(turno), []).append(fila)
-    for materias in grupos.values():
-        materias.sort(key=lambda materia: materia["nombre"])
-    return dict(sorted(grupos.items()))
 
 st.set_page_config(
     page_title="Planificación de mesas de examen",
@@ -38,16 +23,20 @@ st.set_page_config(
 st.title("Planificación de mesas de examen")
 umbral = st.sidebar.slider(
     "Umbral de conflicto",
-    min_value=0.0,
-    max_value=1.0,
-    value=0.5,
-    step=0.05,
-    help="Issue #18: al cambiar el umbral se recalculan el grafo y los turnos.",
+    min_value=0,
+    max_value=80,
+    value=20,
+    step=5,
+    help="Estudiantes afectados predichos. Por encima de este número hay arista de conflicto.",
+
 )
 
-catalogo, pares = datos_mock()
-grafo = construir_grafo(pares, umbral, catalogo)
-colores, n_turnos = colorear(grafo)
+resultado = planificar(umbral)
+grafo = resultado["grafo"]
+colores = resultado["colores"]
+pares = resultado["pares"]
+n_turnos = resultado["cantidad_turnos"]
+
 
 st.sidebar.metric("Aristas de conflicto", grafo.number_of_edges())
 st.sidebar.metric("Turnos necesarios", n_turnos)
@@ -77,7 +66,7 @@ with tab_cronograma:
     if n_turnos == 0:
         st.info("No hay materias para armar el cronograma.")
     else:
-        cronograma = _cronograma(catalogo, colores)
+        cronograma = resultado["cronograma"]
         st.metric("Turnos necesarios", n_turnos)
         columnas = st.columns(n_turnos)
         for turno, materias in cronograma.items():
