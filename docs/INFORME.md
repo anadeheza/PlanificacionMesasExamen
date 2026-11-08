@@ -15,13 +15,6 @@ Luego, el algoritmo de coloreo greedy se asegura que ningun par de materias que 
 
 ### Construir el Grafo
 
-Nuestra funcion principal es `construir_grafo()` que toma las variables `predicciones, umbral, materias, columna` y debuelve un networkx.Graph no dirigido. Es importante aclarar que el grafo no es multigrafo, puesto que (materia1, materia2) y (materia2, materia1) se consideran el mismo par de materias, no se dibuja una doble arista entre ambos nodos. Tambien es importante aclarar que el grafo no admite lazos/bucles dado que (materia1, materia1) no se considera un par de materias valido.
-
-Argumentos de la funcion construir_grafo():
-
-- ***predicciones:*** Tabla de pares: Materia1 | Materia2 | Peso
-- ***umbral:*** Minimo de peso para que una arista se dibuje
-
 ### Colorear el Grafo
 
 ## El Frontend
