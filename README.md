@@ -27,8 +27,10 @@ frontend/
   app.py           # Streamlit: grafo, cronograma y slider
   visualizar_grafo.py
 dataset.py         # genera el dataset sintético
+docs/
+  INFORME.md
+  EJECUCION.md
 requirements.txt
-INFORME.md
 ```
 
 Los CSV y el `.joblib` **no están en git**. Hay que generarlos en cada máquina (pasos 4 y 5).
@@ -110,6 +112,8 @@ El slider de **umbral** está en escala de **estudiantes afectados** (0–80, de
 - Umbral **bajo** → más aristas → en general más turnos.
 - Umbral **alto** → menos aristas → en general menos turnos.
 
+Hay una guía corta también en [docs/EJECUCION.md](docs/EJECUCION.md).
+
 ## Modelo
 
 **Regresión lineal**, no clasificación: hace falta un número (cuántos afectados) para recortar el grafo con el umbral.
@@ -137,14 +141,19 @@ Prueba el pegamento con umbral 20 y muestra nodos, aristas y turnos.
 
 ## Indices
 
-Recurso | Fuente
---------|--------
-Informe de Trabajo | [INFORME.md](INFORME.md)
-Coloreo greedy | https://www.geeksforgeeks.org/dsa/graph-coloring-set-2-greedy-algorithm/
-Coloreo greedy | https://www.cs.cornell.edu/courses/JavaAndDS/files/graphColoring.pdf
-scikit-learn | https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html
-NetworkX | https://networkx.org/documentation/stable/reference/algorithms/coloring.html
-Streamlit | https://docs.streamlit.io/
+| Recurso | Fuente |
+|---------|--------|
+| Informe de trabajo | [docs/INFORME.md](docs/INFORME.md) |
+| Cómo correr el proyecto | [docs/EJECUCION.md](docs/EJECUCION.md) |
+| Frontend | [frontend/app.py](frontend/app.py) |
+| Construcción del grafo | [backend/grafo.py](backend/grafo.py) |
+| Coloreo | [backend/coloreo.py](backend/coloreo.py) |
+| Modelo | [backend/modelo.py](backend/modelo.py) |
+| Coloreo greedy | https://www.geeksforgeeks.org/dsa/graph-coloring-set-2-greedy-algorithm/ |
+| Coloreo greedy | https://www.cs.cornell.edu/courses/JavaAndDS/files/graphColoring.pdf |
+| scikit-learn | https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html |
+| NetworkX | https://networkx.org/documentation/stable/reference/algorithms/coloring.html |
+| Streamlit | https://docs.streamlit.io/ |
 
 ## Fuentes
 

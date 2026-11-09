@@ -4,12 +4,84 @@
   <meta charset="utf-8">
   <style>
     html, body { margin: 0; background: #f7f8fa; }
-    svg { width: 100%; height: 500px; display: block; background: #f7f8fa; border-radius: 12px; }
+    #caja { position: relative; }
+    #marco { overflow: hidden; width: 100%; background: #f7f8fa; border-radius: 12px; }
+    svg { display: block; background: #f7f8fa; }
+    circle { cursor: pointer; }
+    #detalle {
+      display: none;
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 2;
+      max-width: calc(100% - 110px);
+      background: #ffffff;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font: 13px/1.35 sans-serif;
+      color: #1f2933;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+    }
+    #detalle span { display: block; color: #52606d; margin-top: 2px; }
+    #ayuda {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      z-index: 2;
+      margin: 0;
+      font: 13px/1.3 sans-serif;
+      color: #52606d;
+      pointer-events: none;
+    }
+    #foco { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; pointer-events: none; }
+    .chip {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: #ffffff;
+      border: 1px solid #d0d5dd;
+      border-radius: 999px;
+      padding: 1px 6px;
+      font: 600 12px/1.4 sans-serif;
+      color: #1f2933;
+      white-space: nowrap;
+    }
+    #controles {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 2;
+      display: flex;
+      gap: 6px;
+    }
+    #controles button {
+      width: 36px;
+      height: 36px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1f2933;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    #controles button:disabled { opacity: 0.4; cursor: default; }
   </style>
 </head>
 <body>
-  <svg id="grafo" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg"
-       role="img" aria-label="Grafo de conflictos" preserveAspectRatio="xMidYMid meet"></svg>
+  <div id="caja">
+    <div id="controles">
+      <button type="button" id="alejar" aria-label="Alejar">−</button>
+      <button type="button" id="acercar" aria-label="Acercar">+</button>
+    </div>
+    <div id="detalle"></div>
+    <p id="ayuda">Pasá el mouse sobre un punto o una arista.</p>
+    <div id="marco">
+      <svg id="grafo" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-label="Grafo de conflictos"></svg>
+      <div id="foco"></div>
+    </div>
+  </div>
   <script>
     const DURACION = 560;
 
@@ -82,6 +154,7 @@
             y2: mezclar(origen.y2, arista.y2, t),
             mx: mezclar(origen.mx, arista.mx, t),
             my: mezclar(origen.my, arista.my, t),
+            grosor: mezclar(origen.grosor || arista.grosor, arista.grosor, t),
             angulo: angulo(origen.angulo, arista.angulo, t),
             opacidad: mezclar(origen.opacidad, arista.opacidad, t)
           };
@@ -90,85 +163,353 @@
     }
 
     const svg = document.getElementById("grafo");
+    const marco = document.getElementById("marco");
     let armado = false;
+
+    let vista = { ancho: 960, alto: 540 };
+    const ZOOM_MIN = 0.5;
+    const ZOOM_MAX = 4;
+    let escala = 1;
+
+    function actualizarBotones() {
+      document.getElementById("alejar").disabled = escala <= ZOOM_MIN + 0.001;
+      document.getElementById("acercar").disabled = escala >= ZOOM_MAX - 0.001;
+    }
+
+    function reservaDebajo() {
+      const padre = window.parent;
+      let nodo = window.frameElement;
+      while (nodo && nodo.parentElement) {
+        if (nodo.nextElementSibling) {
+          let total = 0;
+          let hermano = nodo.nextElementSibling;
+          while (hermano) {
+            const estilo = padre.getComputedStyle(hermano);
+            total += hermano.getBoundingClientRect().height;
+            total += parseFloat(estilo.marginTop) || 0;
+            total += parseFloat(estilo.marginBottom) || 0;
+            hermano = hermano.nextElementSibling;
+          }
+          return total;
+        }
+        nodo = nodo.parentElement;
+      }
+      return 36;
+    }
+
+    function altoQueEntra() {
+      try {
+        const padre = window.parent;
+        const marcoPadre = window.frameElement;
+        if (!padre || !marcoPadre || padre === window) return Infinity;
+        const rect = marcoPadre.getBoundingClientRect();
+        const scroll = padre.scrollY || padre.document.documentElement.scrollTop || 0;
+        const arriba = rect.top + scroll;
+        return Math.max(240, Math.floor(padre.innerHeight - arriba - reservaDebajo() - 8));
+      } catch (error) {
+        return Infinity;
+      }
+    }
+
+    function encajar(intento) {
+      svg.setAttribute("viewBox", "0 0 " + vista.ancho + " " + vista.alto);
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      const disponible = marco.clientWidth || document.body.clientWidth;
+      if (!disponible && (intento || 0) < 10) {
+        requestAnimationFrame(() => encajar((intento || 0) + 1));
+        return;
+      }
+      const base = disponible || 960;
+      const proporcion = vista.alto / vista.ancho;
+      const altoNatural = Math.max(1, Math.round(base * proporcion));
+      const altoCanvas = Math.max(240, Math.min(altoNatural, altoQueEntra()));
+      const lado = Math.min(base, altoCanvas / proporcion);
+      const anchoAjustado = Math.max(1, Math.round(lado));
+      const altoAjustado = Math.max(1, Math.round(lado * proporcion));
+      const anchoZoom = Math.round(anchoAjustado * escala);
+      const altoZoom = Math.round(altoAjustado * escala);
+      const desbordaX = anchoZoom > base + 1;
+      const desbordaY = altoZoom > altoCanvas + 1;
+      marco.style.height = altoCanvas + "px";
+      marco.style.overflow = desbordaX || desbordaY ? "auto" : "hidden";
+      svg.style.width = anchoZoom + "px";
+      svg.style.height = altoZoom + "px";
+      svg.style.marginLeft = desbordaX ? "0" : Math.max(0, Math.round((base - anchoZoom) / 2)) + "px";
+      svg.style.marginTop = desbordaY ? "0" : Math.max(0, Math.round((altoCanvas - altoZoom) / 2)) + "px";
+      marco.scrollLeft = desbordaX ? Math.max(0, (anchoZoom - base) / 2) : 0;
+      marco.scrollTop = desbordaY ? Math.max(0, (altoZoom - altoCanvas) / 2) : 0;
+      alto(altoCanvas);
+      actualizarBotones();
+      dibujarChips();
+    }
+
+    document.getElementById("acercar").addEventListener("click", () => {
+      escala = Math.min(ZOOM_MAX, escala * 1.25);
+      encajar();
+    });
+    document.getElementById("alejar").addEventListener("click", () => {
+      escala = Math.max(ZOOM_MIN, escala / 1.25);
+      encajar();
+    });
+
+    function prepararMarco(escena) {
+      vista = {
+        ancho: escena.ancho || 960,
+        alto: escena.alto || 540
+      };
+      encajar();
+    }
+
+    window.addEventListener("resize", encajar);
+    try {
+      window.parent.addEventListener("resize", encajar);
+    } catch (error) {}
+    setTimeout(encajar, 200);
+
+    const focoCapa = document.getElementById("foco");
+    const detalle = document.getElementById("detalle");
+    let foco = null;
+
+    function escapar(texto) {
+      return String(texto).replace(/[&<>"']/g, (caracter) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      })[caracter]);
+    }
 
     function asegurar(escena) {
       if (armado) return;
       escena.aristas.forEach((arista) => {
         const linea = document.createElementNS("http://www.w3.org/2000/svg", "line");
         linea.setAttribute("data-arista", arista.id);
-        linea.setAttribute("stroke", "#5c6770");
-        linea.setAttribute("stroke-width", "2");
-        linea.setAttribute("stroke-linecap", "butt");
+        linea.setAttribute("stroke", "#6b7280");
+        linea.setAttribute("stroke-linecap", "round");
+        linea.setAttribute("vector-effect", "non-scaling-stroke");
+        linea.setAttribute("pointer-events", "none");
         svg.appendChild(linea);
+        const zona = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        zona.setAttribute("data-zona", arista.id);
+        zona.setAttribute("stroke", "#000000");
+        zona.setAttribute("stroke-opacity", "0");
+        zona.setAttribute("stroke-width", "16");
+        zona.setAttribute("stroke-linecap", "round");
+        zona.setAttribute("vector-effect", "non-scaling-stroke");
+        zona.setAttribute("pointer-events", "stroke");
+        svg.appendChild(zona);
       });
       escena.nodos.forEach((nodo) => {
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        rect.setAttribute("data-nodo", nodo.id);
-        rect.setAttribute("width", nodo.w);
-        rect.setAttribute("height", nodo.h);
-        rect.setAttribute("rx", "6");
-        rect.setAttribute("fill", "#ffffff");
-        rect.setAttribute("stroke-width", "3");
-        svg.appendChild(rect);
-        const nombre = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        nombre.setAttribute("data-nombre", nodo.id);
-        nombre.setAttribute("text-anchor", "middle");
-        nombre.setAttribute("dominant-baseline", "middle");
-        nombre.setAttribute("font-size", "15");
-        nombre.setAttribute("font-family", "sans-serif");
-        nombre.setAttribute("fill", "#1f2933");
-        nombre.textContent = nodo.nombre;
-        svg.appendChild(nombre);
-      });
-      escena.aristas.forEach((arista) => {
-        const peso = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        peso.setAttribute("data-peso", arista.id);
-        peso.setAttribute("x", "0");
-        peso.setAttribute("y", "-5");
-        peso.setAttribute("text-anchor", "middle");
-        peso.setAttribute("font-size", "14");
-        peso.setAttribute("font-weight", "600");
-        peso.setAttribute("font-family", "sans-serif");
-        peso.setAttribute("fill", "#1f2933");
-        peso.textContent = Number(arista.peso).toFixed(2);
-        svg.appendChild(peso);
+        const punto = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        punto.setAttribute("data-nodo", nodo.id);
+        punto.setAttribute("r", (nodo.w / 2).toFixed(1));
+        punto.setAttribute("fill", nodo.color);
+        punto.setAttribute("stroke", "#ffffff");
+        punto.setAttribute("stroke-width", "2");
+        punto.setAttribute("vector-effect", "non-scaling-stroke");
+        const titulo = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        titulo.textContent = nodo.nombre + " · Turno " + nodo.turno;
+        punto.appendChild(titulo);
+        svg.appendChild(punto);
       });
       armado = true;
     }
 
-    function aplicar(escena) {
-      asegurar(escena);
+    function toca(arista, id) {
+      return arista.origen === id || arista.destino === id;
+    }
+
+    function colocar(escena) {
       escena.nodos.forEach((nodo) => {
-        const rect = svg.querySelector('[data-nodo="' + nodo.id + '"]');
-        rect.setAttribute("x", (nodo.x - nodo.w / 2).toFixed(1));
-        rect.setAttribute("y", (nodo.y - nodo.h / 2).toFixed(1));
-        rect.setAttribute("stroke", nodo.color);
-        const nombre = svg.querySelector('[data-nombre="' + nodo.id + '"]');
-        nombre.setAttribute("x", nodo.x.toFixed(1));
-        nombre.setAttribute("y", nodo.y.toFixed(1));
+        const punto = svg.querySelector('[data-nodo="' + nodo.id + '"]');
+        punto.setAttribute("cx", nodo.x.toFixed(1));
+        punto.setAttribute("cy", nodo.y.toFixed(1));
+        punto.setAttribute("fill", nodo.color);
       });
       escena.aristas.forEach((arista) => {
-        const linea = svg.querySelector('[data-arista="' + arista.id + '"]');
-        linea.setAttribute("x1", arista.x1.toFixed(1));
-        linea.setAttribute("y1", arista.y1.toFixed(1));
-        linea.setAttribute("x2", arista.x2.toFixed(1));
-        linea.setAttribute("y2", arista.y2.toFixed(1));
-        linea.setAttribute("opacity", arista.opacidad.toFixed(3));
-        const peso = svg.querySelector('[data-peso="' + arista.id + '"]');
-        peso.setAttribute(
-          "transform",
-          "translate(" + arista.mx.toFixed(1) + "," + arista.my.toFixed(1) + ") rotate(" + arista.angulo.toFixed(1) + ")"
-        );
-        peso.setAttribute("opacity", arista.opacidad.toFixed(3));
+        [svg.querySelector('[data-arista="' + arista.id + '"]'), svg.querySelector('[data-zona="' + arista.id + '"]')].forEach((linea) => {
+          linea.setAttribute("x1", arista.x1.toFixed(1));
+          linea.setAttribute("y1", arista.y1.toFixed(1));
+          linea.setAttribute("x2", arista.x2.toFixed(1));
+          linea.setAttribute("y2", arista.y2.toFixed(1));
+        });
       });
     }
+
+    function pintar() {
+      if (!actual) return;
+      const nodoFoco = foco && foco.tipo === "nodo" ? foco.id : null;
+      const aristaFoco = foco && foco.tipo === "arista" ? foco.id : null;
+      const vecinos = new Set();
+      if (nodoFoco) vecinos.add(nodoFoco);
+      if (aristaFoco) {
+        const elegida = actual.aristas.find((arista) => arista.id === aristaFoco);
+        if (elegida) {
+          vecinos.add(elegida.origen);
+          vecinos.add(elegida.destino);
+        }
+      }
+      actual.aristas.forEach((arista) => {
+        if (arista.opacidad >= 0.5 && nodoFoco && toca(arista, nodoFoco)) {
+          vecinos.add(arista.origen);
+          vecinos.add(arista.destino);
+        }
+      });
+      actual.nodos.forEach((nodo) => {
+        const punto = svg.querySelector('[data-nodo="' + nodo.id + '"]');
+        const activo = !foco || vecinos.has(nodo.id);
+        const elegido = nodo.id === nodoFoco || (aristaFoco && vecinos.has(nodo.id));
+        punto.setAttribute("r", (elegido ? nodo.w / 2 + 5 : nodo.w / 2).toFixed(1));
+        punto.setAttribute("opacity", activo ? "1" : "0.28");
+      });
+      actual.aristas.forEach((arista) => {
+        const linea = svg.querySelector('[data-arista="' + arista.id + '"]');
+        const zona = svg.querySelector('[data-zona="' + arista.id + '"]');
+        const visible = arista.opacidad >= 0.5;
+        const marcada = visible && ((nodoFoco && toca(arista, nodoFoco)) || arista.id === aristaFoco);
+        const apagada = foco && !marcada;
+        linea.setAttribute("stroke", marcada ? "#1f2933" : "#8b95a1");
+        linea.setAttribute("stroke-width", (marcada ? Math.max(arista.grosor, 3.2) : arista.grosor).toFixed(2));
+        linea.setAttribute("opacity", (apagada ? arista.opacidad * 0.08 : arista.opacidad).toFixed(3));
+        zona.setAttribute("pointer-events", visible ? "stroke" : "none");
+      });
+      dibujarDetalle();
+      dibujarChips();
+    }
+
+    function dibujarDetalle() {
+      if (!actual || !foco) {
+        detalle.style.display = "none";
+        detalle.innerHTML = "";
+        return;
+      }
+      if (foco.tipo === "nodo") {
+        const nodo = actual.nodos.find((item) => item.id === foco.id);
+        if (!nodo) return;
+        const conflictos = actual.aristas.filter((arista) => arista.opacidad >= 0.5 && toca(arista, nodo.id)).length;
+        detalle.innerHTML = "<strong>" + escapar(nodo.nombre) + "</strong><span>Turno " + nodo.turno + " · " + conflictos + (conflictos === 1 ? " conflicto" : " conflictos") + "</span>";
+      } else {
+        const arista = actual.aristas.find((item) => item.id === foco.id);
+        if (!arista) return;
+        const a = actual.nodos.find((item) => item.id === arista.origen);
+        const b = actual.nodos.find((item) => item.id === arista.destino);
+        detalle.innerHTML = "<strong>" + escapar(a ? a.nombre : arista.origen) + "</strong> y <strong>" + escapar(b ? b.nombre : arista.destino) + "</strong><span>" + Number(arista.peso).toFixed(1) + " estudiantes en conflicto</span>";
+      }
+      detalle.style.display = "block";
+    }
+
+    function puntoPantalla(x, y) {
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return null;
+      const pt = svg.createSVGPoint();
+      pt.x = x;
+      pt.y = y;
+      const p = pt.matrixTransform(ctm);
+      const origen = marco.getBoundingClientRect();
+      return {
+        x: p.x - origen.left + marco.scrollLeft,
+        y: p.y - origen.top + marco.scrollTop
+      };
+    }
+
+    function centroNodos() {
+      let x = 0;
+      let y = 0;
+      actual.nodos.forEach((nodo) => {
+        x += nodo.x;
+        y += nodo.y;
+      });
+      return { x: x / actual.nodos.length, y: y / actual.nodos.length };
+    }
+
+    function afuera(x, y, centro) {
+      const dx = x - centro.x;
+      const dy = y - centro.y;
+      const largo = Math.hypot(dx, dy) || 1;
+      return { x: x + dx / largo * 56, y: y + dy / largo * 56 };
+    }
+
+    function dibujarChips() {
+      focoCapa.replaceChildren();
+      if (!actual || !foco) return;
+      const elegidas = actual.aristas.filter((arista) => {
+        if (arista.opacidad < 0.5) return false;
+        if (foco.tipo === "arista") return arista.id === foco.id;
+        return toca(arista, foco.id);
+      });
+      const centro = centroNodos();
+      const puestos = [];
+      elegidas.forEach((arista) => {
+        const extremoA = puntoPantalla(arista.x1, arista.y1);
+        const extremoB = puntoPantalla(arista.x2, arista.y2);
+        if (!extremoA || !extremoB) return;
+        const corta = Math.hypot(extremoA.x - extremoB.x, extremoA.y - extremoB.y) < 150;
+        let x;
+        let y;
+        if (corta) {
+          const ancla = foco.tipo === "nodo" && arista.origen === foco.id
+            ? { x: arista.x2, y: arista.y2 }
+            : foco.tipo === "nodo"
+              ? { x: arista.x1, y: arista.y1 }
+              : { x: (arista.x1 + arista.x2) / 2, y: (arista.y1 + arista.y2) / 2 };
+          const puesto = afuera(ancla.x, ancla.y, centro);
+          x = puesto.x;
+          y = puesto.y;
+        } else if (foco.tipo === "arista") {
+          x = arista.mx;
+          y = arista.my;
+        } else {
+          const desdeOrigen = arista.origen === foco.id;
+          x = desdeOrigen ? arista.x1 + (arista.x2 - arista.x1) * 0.34 : arista.x2 + (arista.x1 - arista.x2) * 0.34;
+          y = desdeOrigen ? arista.y1 + (arista.y2 - arista.y1) * 0.34 : arista.y2 + (arista.y1 - arista.y2) * 0.34;
+        }
+        let pantalla = puntoPantalla(x, y);
+        let intento = 0;
+        while (pantalla && intento < 4 && puestos.some((puesto) => Math.hypot(puesto.x - pantalla.x, puesto.y - pantalla.y) < 26)) {
+          const empujado = afuera(x, y, centro);
+          x = empujado.x;
+          y = empujado.y;
+          pantalla = puntoPantalla(x, y);
+          intento += 1;
+        }
+        if (!pantalla) return;
+        puestos.push(pantalla);
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = Number(arista.peso).toFixed(1);
+        chip.style.left = pantalla.x.toFixed(1) + "px";
+        chip.style.top = pantalla.y.toFixed(1) + "px";
+        focoCapa.appendChild(chip);
+      });
+    }
+
+    function aplicar(escena) {
+      asegurar(escena);
+      colocar(escena);
+      pintar();
+    }
+
+    svg.addEventListener("pointerover", (event) => {
+      const nodo = event.target.closest("[data-nodo]");
+      const zona = event.target.closest("[data-zona]");
+      if (nodo) foco = { tipo: "nodo", id: nodo.getAttribute("data-nodo") };
+      else if (zona) foco = { tipo: "arista", id: zona.getAttribute("data-zona") };
+      else foco = null;
+      pintar();
+    });
+    svg.addEventListener("pointerleave", () => {
+      foco = null;
+      pintar();
+    });
+    marco.addEventListener("scroll", dibujarChips);
 
     let actual = null;
     let animacion = 0;
     const reducir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     function mostrar(escena) {
+      prepararMarco(escena);
       if (!actual || reducir) {
         actual = escena;
         aplicar(escena);
@@ -193,7 +534,6 @@
       const escena = event.data.args && event.data.args.escena;
       if (!escena) return;
       mostrar(escena);
-      alto(520);
     });
 
     listo();
