@@ -54,14 +54,23 @@ st.markdown(
 )
 
 st.title("Planificación de mesas de examen")
+st.caption(
+    "El modelo estima cuántos estudiantes se ven afectados si dos materias rinden juntas. "
+    "El umbral arma el grafo de conflictos y el coloreo asigna un turno a cada materia."
+)
 
+st.sidebar.header("Conflicto")
+st.sidebar.markdown(
+    "El valor es la cantidad **mínima de estudiantes afectados** (predichos) "
+    "para considerar que dos materias chocan. No es una probabilidad 0–1."
+)
 umbral = st.sidebar.slider(
-    "Umbral de conflicto",
+    "Umbral (estudiantes afectados)",
     min_value=0,
     max_value=80,
     value=20,
     step=5,
-    help="Estudiantes afectados predichos. Por encima de este número hay arista de conflicto.",
+    help="Si la predicción es mayor o igual a este número, esas materias no pueden compartir turno.",
 )
 
 resultado = planificar(umbral)
@@ -88,7 +97,7 @@ with tab_grafo:
             f"margin-right:14px;font-size:13px;line-height:1'>"
             f"<span style='width:10px;height:10px;border-radius:50%;"
             f"background:{_color_turno(turno)};display:inline-block'></span>"
-            f"Turno {turno}</span>"
+            f"Turno {turno + 1}</span>"
             for turno in range(n_turnos)
         )
         st.markdown(
@@ -98,26 +107,26 @@ with tab_grafo:
         )
 
 with tab_cronograma:
-    st.subheader("Cronograma por turno")
     if n_turnos == 0:
         st.info("No hay materias para armar el cronograma.")
     else:
-        st.metric("Turnos necesarios", n_turnos)
         tarjetas = []
         for turno, materias in cronograma.items():
             filas = "".join(
-                "<div style='margin:0 0 10px'>"
-                f"<div style='font-weight:650;overflow-wrap:anywhere'>{html.escape(materia['nombre'])}</div>"
-                "<div style='color:#52606d;font-size:0.85rem;overflow-wrap:anywhere'>"
+                "<div style='margin:0 0 0.9rem'>"
+                f"<div style='font-weight:650;line-height:1.2;overflow-wrap:anywhere'>"
+                f"{html.escape(str(materia['nombre']))}</div>"
+                "<div style='color:#52606d;font-size:0.8rem;line-height:1.2;"
+                "margin-top:0.1rem;overflow-wrap:anywhere'>"
                 f"{html.escape(str(materia['carrera']))} · Año {html.escape(str(materia['anio']))}"
                 "</div></div>"
                 for materia in materias
             )
             tarjetas.append(
                 "<section style='flex:1 1 220px;min-width:0;max-width:100%'>"
-                f"<div style='font-size:1.15rem;font-weight:650;margin:0 0 10px;"
+                f"<div style='font-size:1.15rem;font-weight:650;margin:0 0 0.6rem;"
                 f"padding-bottom:4px;border-bottom:4px solid {_color_turno(turno)}'>"
-                f"Turno {turno}</div>"
+                f"Turno {turno + 1}</div>"
                 f"{filas}"
                 "</section>"
             )
