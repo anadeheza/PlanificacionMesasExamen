@@ -26,30 +26,6 @@ GROSOR_ARISTA = 2
 ALTO_NODO = 46
 
 
-def datos_mock():
-    """Pares de ejemplo, con una materia que no tiene ningún conflicto."""
-    materias = pd.DataFrame(
-        [
-            {"id": "ALG", "nombre": "Álgebra I", "carrera": "Informática", "anio": 1},
-            {"id": "PROG", "nombre": "Programación I", "carrera": "Informática", "anio": 1},
-            {"id": "AM", "nombre": "Análisis Matemático", "carrera": "Informática", "anio": 1},
-            {"id": "FIS", "nombre": "Física I", "carrera": "Industrial", "anio": 1},
-            {"id": "QUI", "nombre": "Química", "carrera": "Industrial", "anio": 1},
-            {"id": "ELE", "nombre": "Electiva", "carrera": "Informática", "anio": 3},
-        ]
-    )
-    pares = pd.DataFrame(
-        [
-            {"materia_id_1": "ALG", "materia_id_2": "PROG", "prediccion": 0.90},
-            {"materia_id_1": "ALG", "materia_id_2": "AM", "prediccion": 0.75},
-            {"materia_id_1": "PROG", "materia_id_2": "AM", "prediccion": 0.60},
-            {"materia_id_1": "FIS", "materia_id_2": "QUI", "prediccion": 0.45},
-            {"materia_id_1": "AM", "materia_id_2": "FIS", "prediccion": 0.30},
-        ]
-    )
-    return materias, pares
-
-
 def mostrar_grafo(grafo, colores, aristas, paleta=None):
     """Muestra el grafo en un componente que sigue vivo entre un umbral y otro.
 
@@ -103,12 +79,11 @@ def _lista_aristas(aristas, grafo):
 
 
 def _escena(grafo, colores, aristas, paleta):
-    ancho, alto = 960, 540
     medidas = {
         nodo: _medida(grafo.nodes[nodo].get("nombre") or str(nodo))
         for nodo in grafo.nodes
     }
-    posiciones = _posiciones(grafo, medidas, ancho, alto)
+    ancho, alto, posiciones = _geometria(grafo, medidas)
     nodos = []
     for nodo in grafo.nodes:
         x, y = posiciones[nodo]
@@ -134,29 +109,41 @@ def _escena(grafo, colores, aristas, paleta):
         x1, y1 = posiciones[materia_a]
         x2, y2 = posiciones[materia_b]
         clave = tuple(sorted((str(materia_a), str(materia_b))))
+        identificador = f"{clave[0]}|{clave[1]}"
+        opacidad = 1 if grafo.has_edge(materia_a, materia_b) else 0
+        previo = next((item for item in dibujo_aristas if item["id"] == identificador), None)
+        if previo is not None:
+            if opacidad > previo["opacidad"]:
+                previo["opacidad"] = opacidad
+                previo["peso"] = peso
+            continue
         dibujo_aristas.append(
             {
-                "id": f"{clave[0]}|{clave[1]}",
+                "id": identificador,
                 "peso": peso,
                 "x1": x1,
                 "y1": y1,
                 "x2": x2,
                 "y2": y2,
-                "mx": (x1 + x2) / 2,
-                "my": (y1 + y2) / 2,
+                "w1": medidas[materia_a][0],
+                "h1": medidas[materia_a][1],
+                "w2": medidas[materia_b][0],
+                "h2": medidas[materia_b][1],
                 "angulo": _angulo(x1, y1, x2, y2),
-                "opacidad": 1 if grafo.has_edge(materia_a, materia_b) else 0,
+                "opacidad": opacidad,
             }
         )
-    return {"nodos": nodos, "aristas": dibujo_aristas}
+    _acomodar_pesos(dibujo_aristas)
+    return {"nodos": nodos, "aristas": dibujo_aristas, "ancho": ancho, "alto": alto}
 
 
 def _svg(escena, datos_animacion):
+    ancho = escena.get("ancho", 960)
+    alto = escena.get("alto", 540)
     partes = [
-        '<svg viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" '
+        f'<svg viewBox="0 0 {ancho:.0f} {alto:.0f}" xmlns="http://www.w3.org/2000/svg" '
         'role="img" aria-label="Grafo de conflictos" '
-        'preserveAspectRatio="xMidYMid meet" '
-        'style="width:100%;height:500px;display:block;background:#f7f8fa;border-radius:12px;">'
+        f'style="width:{ancho:.0f}px;height:{alto:.0f}px;display:block;background:#f7f8fa;">'
     ]
     for arista in escena["aristas"]:
         partes.append(
@@ -189,6 +176,7 @@ def _svg(escena, datos_animacion):
             f'<text transform="translate({arista["mx"]:.1f},{arista["my"]:.1f}) '
             f'rotate({arista["angulo"]:.1f})" x="0" y="-5" text-anchor="middle" '
             f'font-size="14" font-weight="600" font-family="sans-serif" fill="#1f2933" '
+            f'stroke="#f7f8fa" stroke-width="5" paint-order="stroke" stroke-linejoin="round" '
             f'opacity="{arista["opacidad"]}" data-peso="{html.escape(arista["id"])}">'
             f"{arista['peso']:.2f}</text>"
         )
@@ -292,40 +280,180 @@ def _angulo(x1, y1, x2, y2):
     return math.degrees(angulo)
 
 
-def _posiciones(grafo, medidas, ancho, alto):
+def _geometria(grafo, medidas):
+    """Arma un lienzo donde los rectángulos no se pisan.
+
+    El círculo crece con la cantidad de materias y deja un corredor
+    entre vecinos para el peso de la arista.
+    """
     conectados = sorted(nodo for nodo in grafo.nodes if grafo.degree(nodo) > 0)
     aislados = sorted(nodo for nodo in grafo.nodes if grafo.degree(nodo) == 0)
+    margen = 36
+    radio = _radio_minimo(conectados, medidas, 108)
+    if 2 <= len(conectados) <= 8:
+        radio = max(radio, 210)
+    extra = 28
+    if conectados:
+        extra += max(
+            math.hypot(medidas[nodo][0] / 2, medidas[nodo][1] / 2) for nodo in conectados
+        )
+    diametro = 2 * (radio + extra)
     posiciones = {}
-    margen = 20
 
     if conectados and aislados:
         ancho_columna = max(medidas[nodo][0] for nodo in aislados)
-        izquierda = margen + ancho_columna + 56
-    else:
-        ancho_columna = 0
-        izquierda = margen
-
-    if conectados:
-        derecha = ancho - margen
-        centro_x = (izquierda + derecha) / 2
-        medio_ancho = max(medidas[nodo][0] for nodo in conectados) / 2
-        radio_tope = min(
-            (derecha - izquierda) / 2 - medio_ancho - 8,
-            alto / 2 - ALTO_NODO / 2 - margen,
-        )
-        radio = 0 if len(conectados) == 1 else max(90, radio_tope)
-        for i, nodo in enumerate(conectados):
-            angulo = -math.pi / 2 + 2 * math.pi * i / len(conectados)
-            posiciones[nodo] = (
-                centro_x + radio * math.cos(angulo),
-                alto / 2 + radio * math.sin(angulo),
-            )
-
-    if aislados and conectados:
+        alto_columna = sum(medidas[nodo][1] for nodo in aislados) + 22 * (len(aislados) - 1)
+        ancho = margen + ancho_columna + 80 + diametro + margen
+        alto = max(diametro, alto_columna) + 2 * margen
+        centro_x = margen + ancho_columna + 80 + extra + radio
+        posiciones.update(_en_circulo(conectados, centro_x, alto / 2, radio))
         posiciones.update(_columna(aislados, medidas, margen, alto))
-    elif aislados:
-        posiciones.update(_fila(aislados, medidas, alto / 2, ancho))
+    elif conectados:
+        ancho = diametro + 2 * margen
+        alto = diametro + 2 * margen
+        posiciones.update(_en_circulo(conectados, ancho / 2, alto / 2, radio))
+    else:
+        ancho, alto = _fila(aislados, medidas, margen, posiciones)
+
+    lado = max(ancho, alto, _lado_maximo(list(grafo.nodes), medidas))
+    desplazamiento_x = (lado - ancho) / 2
+    desplazamiento_y = (lado - alto) / 2
+    if desplazamiento_x or desplazamiento_y:
+        posiciones = {
+            nodo: (x + desplazamiento_x, y + desplazamiento_y)
+            for nodo, (x, y) in posiciones.items()
+        }
+    return lado, lado, posiciones
+
+
+def _lado_maximo(nodos, medidas):
+    """Lado del lienzo con todas las materias en círculo: no cambia con el umbral."""
+    margen = 36
+    if not nodos:
+        return 960
+    radio = _radio_minimo(nodos, medidas, 108)
+    if 2 <= len(nodos) <= 8:
+        radio = max(radio, 210)
+    extra = 28 + max(
+        math.hypot(medidas[nodo][0] / 2, medidas[nodo][1] / 2) for nodo in nodos
+    )
+    return 2 * (radio + extra) + 2 * margen
+
+
+def _radio_minimo(nodos, medidas, espacio):
+    """Menor radio cuyo círculo deja `espacio` px libres entre rectángulos."""
+    cantidad = len(nodos)
+    if cantidad <= 1:
+        return 0.0
+    delta = 2 * math.pi / cantidad
+
+    def cabe(radio):
+        centros = []
+        for i, nodo in enumerate(nodos):
+            angulo = -math.pi / 2 + delta * i
+            centros.append((radio * math.cos(angulo), radio * math.sin(angulo), nodo))
+        for i in range(cantidad):
+            for j in range(i + 1, cantidad):
+                dx = abs(centros[i][0] - centros[j][0])
+                dy = abs(centros[i][1] - centros[j][1])
+                ancho = (medidas[centros[i][2]][0] + medidas[centros[j][2]][0]) / 2 + espacio
+                alto = (medidas[centros[i][2]][1] + medidas[centros[j][2]][1]) / 2 + espacio
+                if dx < ancho and dy < alto:
+                    return False
+        return True
+
+    lo, hi = 0.0, 240.0
+    while not cabe(hi):
+        hi *= 2
+    for _ in range(26):
+        medio = (lo + hi) / 2
+        if cabe(medio):
+            hi = medio
+        else:
+            lo = medio
+    return hi
+
+
+def _en_circulo(nodos, centro_x, centro_y, radio):
+    posiciones = {}
+    cantidad = len(nodos)
+    for i, nodo in enumerate(nodos):
+        if cantidad == 1:
+            posiciones[nodo] = (centro_x, centro_y)
+            continue
+        angulo = -math.pi / 2 + 2 * math.pi * i / cantidad
+        posiciones[nodo] = (
+            centro_x + radio * math.cos(angulo),
+            centro_y + radio * math.sin(angulo),
+        )
     return posiciones
+
+
+def _distancia_hasta_borde(ancho, alto, ux, uy):
+    if abs(ux) < 1e-9:
+        return (alto / 2) / abs(uy)
+    if abs(uy) < 1e-9:
+        return (ancho / 2) / abs(ux)
+    return min((ancho / 2) / abs(ux), (alto / 2) / abs(uy))
+
+
+def _acomodar_pesos(aristas):
+    """Apoya cada peso justo afuera de una materia, escalonado si no entra."""
+    visibles = [arista for arista in aristas if arista["opacidad"] >= 0.5]
+    for arista in aristas:
+        if arista["opacidad"] < 0.5:
+            arista["mx"] = (arista["x1"] + arista["x2"]) / 2
+            arista["my"] = (arista["y1"] + arista["y2"]) / 2
+    if not visibles:
+        return
+
+    carga = {}
+    grupos = {}
+    for arista in visibles:
+        clave_a = (round(arista["x1"], 1), round(arista["y1"], 1))
+        clave_b = (round(arista["x2"], 1), round(arista["y2"], 1))
+        carga.setdefault(clave_a, 0)
+        carga.setdefault(clave_b, 0)
+        if carga[clave_a] <= carga[clave_b]:
+            dueno = clave_a
+            carga[clave_a] += 1
+        else:
+            dueno = clave_b
+            carga[clave_b] += 1
+        grupos.setdefault(dueno, []).append(arista)
+
+    for dueno, grupo in grupos.items():
+        def direccion(arista, ancla=dueno):
+            if (round(arista["x1"], 1), round(arista["y1"], 1)) == ancla:
+                return math.atan2(arista["y2"] - arista["y1"], arista["x2"] - arista["x1"])
+            return math.atan2(arista["y1"] - arista["y2"], arista["x1"] - arista["x2"])
+
+        grupo.sort(key=direccion)
+        puestos = []
+        for arista in grupo:
+            desde_origen = (round(arista["x1"], 1), round(arista["y1"], 1)) == dueno
+            if desde_origen:
+                cx, cy = arista["x1"], arista["y1"]
+                ancho_nodo, alto_nodo = arista["w1"], arista["h1"]
+                dx, dy = arista["x2"] - arista["x1"], arista["y2"] - arista["y1"]
+            else:
+                cx, cy = arista["x2"], arista["y2"]
+                ancho_nodo, alto_nodo = arista["w2"], arista["h2"]
+                dx, dy = arista["x1"] - arista["x2"], arista["y1"] - arista["y2"]
+            largo = math.hypot(dx, dy) or 1
+            ux, uy = dx / largo, dy / largo
+            salida = _distancia_hasta_borde(ancho_nodo, alto_nodo, ux, uy)
+            avance = 30
+            tope = max(avance, largo * 0.62)
+            x = cx + ux * (salida + avance)
+            y = cy + uy * (salida + avance)
+            while avance < tope and any(math.hypot(x - px, y - py) < 44 for px, py in puestos):
+                avance += 36
+                x = cx + ux * (salida + avance)
+                y = cy + uy * (salida + avance)
+            arista["mx"] = x
+            arista["my"] = y
+            puestos.append((x, y))
 
 
 def _columna(nodos, medidas, margen, alto):
@@ -341,13 +469,17 @@ def _columna(nodos, medidas, margen, alto):
     return posiciones
 
 
-def _fila(nodos, medidas, y, ancho):
+def _fila(nodos, medidas, margen, posiciones):
+    """Centra en una fila el caso en que todas las materias están aisladas."""
     separacion = 26
+    if not nodos:
+        return 960, 540
     total = sum(medidas[nodo][0] for nodo in nodos) + separacion * (len(nodos) - 1)
-    cursor = (ancho - total) / 2
-    posiciones = {}
+    ancho = total + 2 * margen
+    alto = ALTO_NODO + 2 * margen + 28
+    cursor = margen
     for nodo in nodos:
         ancho_nodo = medidas[nodo][0]
-        posiciones[nodo] = (cursor + ancho_nodo / 2, y)
+        posiciones[nodo] = (cursor + ancho_nodo / 2, alto / 2)
         cursor += ancho_nodo + separacion
-    return posiciones
+    return ancho, alto

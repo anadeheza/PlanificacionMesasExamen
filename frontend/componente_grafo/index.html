@@ -4,12 +4,42 @@
   <meta charset="utf-8">
   <style>
     html, body { margin: 0; background: #f7f8fa; }
-    svg { width: 100%; height: 500px; display: block; background: #f7f8fa; border-radius: 12px; }
+    #caja { position: relative; }
+    #marco { overflow: hidden; width: 100%; background: #f7f8fa; border-radius: 12px; }
+    svg { display: block; background: #f7f8fa; }
+    #controles {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 2;
+      display: flex;
+      gap: 6px;
+    }
+    #controles button {
+      width: 36px;
+      height: 36px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1f2933;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    #controles button:disabled { opacity: 0.4; cursor: default; }
   </style>
 </head>
 <body>
-  <svg id="grafo" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg"
-       role="img" aria-label="Grafo de conflictos" preserveAspectRatio="xMidYMid meet"></svg>
+  <div id="caja">
+    <div id="controles">
+      <button type="button" id="alejar" aria-label="Alejar">−</button>
+      <button type="button" id="acercar" aria-label="Acercar">+</button>
+    </div>
+    <div id="marco">
+      <svg id="grafo" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-label="Grafo de conflictos"></svg>
+    </div>
+  </div>
   <script>
     const DURACION = 560;
 
@@ -90,7 +120,68 @@
     }
 
     const svg = document.getElementById("grafo");
+    const marco = document.getElementById("marco");
     let armado = false;
+
+    let vista = { ancho: 960, alto: 540 };
+    const ZOOM_MIN = 0.5;
+    const ZOOM_MAX = 4;
+    let escala = 1;
+
+    function actualizarBotones() {
+      document.getElementById("alejar").disabled = escala <= ZOOM_MIN + 0.001;
+      document.getElementById("acercar").disabled = escala >= ZOOM_MAX - 0.001;
+    }
+
+    function encajar(intento) {
+      svg.setAttribute("viewBox", "0 0 " + vista.ancho + " " + vista.alto);
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      const disponible = marco.clientWidth || document.body.clientWidth;
+      if (!disponible && (intento || 0) < 10) {
+        requestAnimationFrame(() => encajar((intento || 0) + 1));
+        return;
+      }
+      const base = disponible || 960;
+      const altoCanvas = Math.max(1, Math.round(base * vista.alto / vista.ancho));
+      const anchoZoom = Math.round(base * escala);
+      const altoZoom = Math.round(altoCanvas * escala);
+      marco.style.height = altoCanvas + "px";
+      marco.style.overflow = anchoZoom > base + 1 ? "auto" : "hidden";
+      svg.style.width = anchoZoom + "px";
+      svg.style.height = altoZoom + "px";
+      if (anchoZoom <= base) {
+        svg.style.marginLeft = Math.max(0, Math.round((base - anchoZoom) / 2)) + "px";
+        svg.style.marginTop = Math.max(0, Math.round((altoCanvas - altoZoom) / 2)) + "px";
+        marco.scrollLeft = 0;
+        marco.scrollTop = 0;
+      } else {
+        svg.style.marginLeft = "0";
+        svg.style.marginTop = "0";
+        marco.scrollLeft = Math.max(0, (anchoZoom - base) / 2);
+        marco.scrollTop = Math.max(0, (altoZoom - altoCanvas) / 2);
+      }
+      alto(altoCanvas);
+      actualizarBotones();
+    }
+
+    document.getElementById("acercar").addEventListener("click", () => {
+      escala = Math.min(ZOOM_MAX, escala * 1.25);
+      encajar();
+    });
+    document.getElementById("alejar").addEventListener("click", () => {
+      escala = Math.max(ZOOM_MIN, escala / 1.25);
+      encajar();
+    });
+
+    function prepararMarco(escena) {
+      vista = {
+        ancho: escena.ancho || 960,
+        alto: escena.alto || 540
+      };
+      encajar();
+    }
+
+    window.addEventListener("resize", encajar);
 
     function asegurar(escena) {
       if (armado) return;
@@ -131,6 +222,10 @@
         peso.setAttribute("font-weight", "600");
         peso.setAttribute("font-family", "sans-serif");
         peso.setAttribute("fill", "#1f2933");
+        peso.setAttribute("stroke", "#f7f8fa");
+        peso.setAttribute("stroke-width", "5");
+        peso.setAttribute("paint-order", "stroke");
+        peso.setAttribute("stroke-linejoin", "round");
         peso.textContent = Number(arista.peso).toFixed(2);
         svg.appendChild(peso);
       });
@@ -169,6 +264,7 @@
     const reducir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     function mostrar(escena) {
+      prepararMarco(escena);
       if (!actual || reducir) {
         actual = escena;
         aplicar(escena);
@@ -193,7 +289,6 @@
       const escena = event.data.args && event.data.args.escena;
       if (!escena) return;
       mostrar(escena);
-      alto(520);
     });
 
     listo();
