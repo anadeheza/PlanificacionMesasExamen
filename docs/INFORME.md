@@ -147,7 +147,6 @@ Cabe aclarar que esto no significa que le pasamos el enunciado de una vez y espe
 
 ### Para que no la usamos?
 
-- **Documentacion:** Este propio informe fue escrito a mano para hacer justicia a nuestro entendimiento del problema e incluso de nuestra propia solucion.
 - **Prompts y Revision de codigo:** Si bien la mayoria del codigo fue generado quisimos darle instrucciones claras a nuestros agentes sobre como encarar el problema. Luego nos encargamos de leer el codigo generado, comprenderlo y decidir si satisfacia nuestras necesidades o no.
 
 ### Errores o Desentendimientos de la IA
