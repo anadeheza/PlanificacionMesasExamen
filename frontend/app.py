@@ -23,14 +23,19 @@ st.set_page_config(
 )
 
 st.title("Planificación de mesas de examen")
+st.caption(
+    "El modelo estima cuántos estudiantes se ven afectados si dos materias rinden juntas. "
+    "El umbral arma el grafo de conflictos y el coloreo asigna un turno a cada materia."
+)
 
+st.sidebar.header("Conflicto")
 umbral = st.sidebar.slider(
-    "Umbral de conflicto",
+    "Umbral (estudiantes afectados)",
     min_value=0,
     max_value=80,
     value=20,
     step=5,
-    help="Estudiantes afectados predichos. Por encima de este número hay arista de conflicto.",
+    help="Si la predicción es mayor o igual a este número, esas materias no pueden compartir turno.",
 )
 
 resultado = planificar(umbral)
