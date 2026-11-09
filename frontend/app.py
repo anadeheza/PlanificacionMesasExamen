@@ -59,7 +59,7 @@ with tab_grafo:
                 f"<span style='width:14px;height:14px;border-radius:3px;"
                 f"background:#ffffff;border:3px solid {_color_turno(turno)};"
                 f"display:inline-block;box-sizing:border-box'></span>"
-                f"Turno {turno}</div>",
+                f"Turno {turno + 1}</div>",
                 unsafe_allow_html=True,
             )
         mostrar_grafo(grafo, colores, pares, PALETA_TURNO)
@@ -75,7 +75,7 @@ with tab_cronograma:
             with columnas[turno]:
                 st.markdown(
                     f"<h3 style='border-bottom: 4px solid {_color_turno(turno)};'>"
-                    f"Turno {turno}</h3>",
+                    f"Turno {turno + 1}</h3>",
                     unsafe_allow_html=True,
                 )
                 for materia in materias:
