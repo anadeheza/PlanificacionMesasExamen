@@ -280,6 +280,10 @@
       })[caracter]);
     }
 
+    function etiquetaTurno(turno) {
+      return "Turno " + (Number(turno) + 1);
+    }
+
     function asegurar(escena) {
       if (armado) return;
       escena.aristas.forEach((arista) => {
@@ -309,7 +313,7 @@
         punto.setAttribute("stroke-width", "2");
         punto.setAttribute("vector-effect", "non-scaling-stroke");
         const titulo = document.createElementNS("http://www.w3.org/2000/svg", "title");
-        titulo.textContent = nodo.nombre + " · Turno " + nodo.turno;
+        titulo.textContent = nodo.nombre + " · " + etiquetaTurno(nodo.turno);
         punto.appendChild(titulo);
         svg.appendChild(punto);
       });
@@ -326,6 +330,8 @@
         punto.setAttribute("cx", nodo.x.toFixed(1));
         punto.setAttribute("cy", nodo.y.toFixed(1));
         punto.setAttribute("fill", nodo.color);
+        const titulo = punto.querySelector("title");
+        if (titulo) titulo.textContent = nodo.nombre + " · " + etiquetaTurno(nodo.turno);
       });
       escena.aristas.forEach((arista) => {
         [svg.querySelector('[data-arista="' + arista.id + '"]'), svg.querySelector('[data-zona="' + arista.id + '"]')].forEach((linea) => {
@@ -388,7 +394,7 @@
         const nodo = actual.nodos.find((item) => item.id === foco.id);
         if (!nodo) return;
         const conflictos = actual.aristas.filter((arista) => arista.opacidad >= 0.5 && toca(arista, nodo.id)).length;
-        detalle.innerHTML = "<strong>" + escapar(nodo.nombre) + "</strong><span>Turno " + nodo.turno + " · " + conflictos + (conflictos === 1 ? " conflicto" : " conflictos") + "</span>";
+        detalle.innerHTML = "<strong>" + escapar(nodo.nombre) + "</strong><span>" + etiquetaTurno(nodo.turno) + " · " + conflictos + (conflictos === 1 ? " conflicto" : " conflictos") + "</span>";
       } else {
         const arista = actual.aristas.find((item) => item.id === foco.id);
         if (!arista) return;

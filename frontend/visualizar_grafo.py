@@ -193,7 +193,7 @@ def _svg(escena, datos_animacion):
             f'fill="{nodo["color"]}" stroke="#ffffff" stroke-width="2" '
             f'data-nodo="{html.escape(nodo["id"])}" data-turno="{nodo["turno"]}" '
             f'data-aislado="{1 if nodo["aislado"] else 0}">'
-            f"<title>{html.escape(nodo['nombre'])} · Turno {nodo['turno']}</title>"
+            f"<title>{html.escape(nodo['nombre'])} · Turno {nodo['turno'] + 1}</title>"
             f"</circle>"
         )
     for arista in escena["aristas"]:
