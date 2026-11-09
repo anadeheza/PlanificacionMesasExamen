@@ -37,11 +37,11 @@ st.markdown(
       }
       h1 {
         font-size: 1.2rem !important;
-        line-height: 1.2 !important;
-        margin: 0 0 0.15rem 0 !important;
+        line-height: 1.5 !important;
+        margin: 0 0 0.45rem 0 !important;
         padding: 0 !important;
       }
-      div[data-testid="stHeading"] { margin: 0 !important; }
+      div[data-testid="stHeading"] { margin: 0 0 0.35rem 0 !important; }
       button[data-baseweb="tab"] {
         font-size: 0.85rem !important;
         padding-top: 0.3rem !important;
