@@ -55,6 +55,8 @@ def entrenar():
 
 def predecir(pares):
     """Estima cant_estudiantes_afectados para cada par."""
+    if not RUTA_MODELO.exists():
+        entrenar()
     modelo = jb.load(RUTA_MODELO)
     return modelo.predict(_features(pares)).clip(min=0)
 
