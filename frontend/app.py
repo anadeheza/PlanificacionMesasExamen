@@ -60,10 +60,6 @@ st.caption(
 )
 
 st.sidebar.header("Conflicto")
-st.sidebar.markdown(
-    "El valor es la cantidad **mínima de estudiantes afectados** (predichos) "
-    "para considerar que dos materias chocan. No es una probabilidad 0–1."
-)
 umbral = st.sidebar.slider(
     "Umbral (estudiantes afectados)",
     min_value=0,
