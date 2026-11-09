@@ -136,8 +136,27 @@ Python 3.12,
 
 ## 9. Uso de inteligencia artificial
 
-- **Gemini:** generación inicial de `dataset.py`.
-- **Cursor (asistente de código):** guía para implementar el modelo y el coloreo, `planificar`, README e informe. El algoritmo de Welsh-Powell y el entrenamiento se escribieron y corrieron en el proyecto; las métricas de esta sección salen de esa ejecución.
+Nos apoyamos ampliamente en el uso de inteligencia artificial para este trabajo. Consideramos que actualmente es infima o casi nula la cantidad de codigo escrito a mano en el mundo profesional y que las materias en particular a las que refiere este trabajo no se enfoncan en el codgio en si, si no en la teoria logica y matematica que viene detras del mismo. Es por eso que decidimos invertir nuestro tiempo mas en plantear el problema y disenar la solucion que en escribir el codigo en si.
+
+Cabe aclarar que esto no significa que le pasamos el enunciado de una vez y esperamos a ver que nos devolvia. Todos los prompts fueron pensados y todas las generaciones fueron leidas, estudiadas y modificadas para que sastifazcan mejor nuestra idea del trabajo. Creemos haber hecho un uso conciente y haber utilizado la IA como herramienta mas que como solucion directa.
+
+### Para que la usamos?
+
+- **Dataset:** Como sugirio el propio enunciado, nuestro dataset fue generado a partir del script `dataset.py` que a su vez fue generado por Gemini AI.
+- **Codigo:** En su mayoria, el codigo de este trabajo fue generado por inteligencia artificial, en particular por Cursor Agent.
+
+### Para que no la usamos?
+
+- **Documentacion:** Este propio informe fue escrito a mano para hacer justicia a nuestro entendimiento del problema e incluso de nuestra propia solucion.
+- **Prompts y Revision de codigo:** Si bien la mayoria del codigo fue generado quisimos darle instrucciones claras a nuestros agentes sobre como encarar el problema. Luego nos encargamos de leer el codigo generado, comprenderlo y decidir si satisfacia nuestras necesidades o no.
+
+### Errores o Desentendimientos de la IA
+
+Un ejemplo puntual de mi parte (Julieta) es que cuando promptee la generacion del codigo para la construccion del grafo explique la funcion de nuestro `umbral`. Quizas mi explicacion del umbral no fue lo suficientemente precisa porque cuando revise el codigo antes de probarlo note la existencia de un umbral minimo y un umbral maximo. Un umbral maximo frustra el objetivo del problema siendo que ignoramos los pesos mas altos. Ignorar los pesos mas altos implica quitarle prioridad a los pares de materias con mayor conflictividad, posiblemente asignandoles el mismo turno (exactamente lo opuesto a lo que queremos conseguir).
+
+### Reflexion final
+
+En general, creemos que la IA deberia utilizarse para el trabajo que a uno como programador le genera problemas y perdidas de tiempo. El programador deberia ser capaz de plantear un problema, descomponerlo en problemas mas chicos y encontrar soluciones chicas para generar un gran sistema que resuelva el problema inicial. A partir de una idea bien planteada es cuando el programador debe delegarle el codigo a la herramienta. La IA nos sirve para desocuparnos de debuggear y de memorizar sintaxis pero no deberiamos depender de ella para plantar las bases de nuestro trabajo, especialmente en una instancia evaluativa donde se requiere que empleemos lo aprendido en clases para resolver un problema.
 
 ## 10. Fuentes
 
