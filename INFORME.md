@@ -1,12 +1,18 @@
 # Informe de trabajo
 
-**Materia:** Lógica y Teoría de Grafos  
-**Trabajo práctico final:** Planificación de mesas de examen  
+**Materia:** Lógica y Teoría de Grafos
+**Trabajo práctico final:** Planificación de mesas de examen
 **Integrantes:** Ana Deheza - Julieta Segovia
 
 ## 1. Problema
 
-La secretaría académica tiene que armar el cronograma de mesas. Si dos materias con muchos estudiantes en común rinden en el mismo turno, esos estudiantes tienen que elegir a cuál ir. El objetivo es estimar a cuantas personas les afecta la colision de dos mesas y asignar turnos de forma que estas no se superpongan, usando la menor cantidad de turnos posible.
+Una facultad necesita organizar los turnos de mesas de examenes de manera tal que las materias que se rinden en el mismo turno tengan la menor cantidad de estudiantes adeudores en comun. La facultad a su vez quiere tener la menor cantidad de turnos distintos posibles. O sea que sabiendo que va a haber materias que si o si tienen que compartir turno, tenemos que hallar la manera de perjudicar a la menor cantidad de estudiantes adeudores.
+
+Para esto generamos un dataset mock que representaria el historial de estudiantes de semestres anteriores que han adeudado esas materias. Usando este dataset entrenamos un modelo de regresion lineal para que estime cuantos alumnos se van a llevar un par de materias simultaneamente. El modelo predice cuántos estudiantes se verían afectados.
+
+En base a esas predicciones, asignamos un valor a cada par de materias al que llamamos `peso`. Un peso bajo indica pocos alumnos afectados por la coincidencia de turnos de un par de materias, un peso alto indica lo contrario. Nuestro grafo se construye a partir de ese peso. Como la facultad no ofrece un limite de turnos, implementamos un minimo de peso dinamico al que llamamos `umbral`. En el grafo, todas las materias se representan como nodos, pero solo aquellas parejas de materias con peso mayor o igual al umbral se consideran *"conflictivas"* y sus nodos se unen por una arista.
+
+Luego, el algoritmo de coloreo greedy se asegura que ningun par de materias que compartan una arista se pinten del mismo color. Entonces, si los colores del grafo representan cada uno un turno de mesa, esta asegurado que las materias con mayor conflictividad no se van a rendir en el mismo turno.
 
 El sistema combina tres piezas:
 
@@ -25,13 +31,13 @@ No hay un historial real de la facultad. Se genera un dataset **sintético** con
 
 Cada fila es un par, no una materia suelta. Columnas:
 
-| Campo | Rol |
-|-------|-----|
-| `materia_id_1`, `materia_id_2` | identificadores del par |
-| `cant_estudiantes_compartidos_historico` | feature |
-| `mismo_anio`, `misma_carrera` | features |
-| `cant_estudiantes_afectados` | variable a predecir (regresión) |
-| `hubo_conflicto` | alternativa de clasificación; **no se usa** en el modelo final |
+| Campo                                      | Rol                                                                   |
+| ------------------------------------------ | --------------------------------------------------------------------- |
+| `materia_id_1`, `materia_id_2`         | identificadores del par                                               |
+| `cant_estudiantes_compartidos_historico` | feature                                                               |
+| `mismo_anio`, `misma_carrera`          | features                                                              |
+| `cant_estudiantes_afectados`             | variable a predecir (regresión)                                      |
+| `hubo_conflicto`                         | alternativa de clasificación; **no se usa** en el modelo final |
 
 La generación imita solapamiento académico: más estudiantes compartidos si son la misma carrera y el mismo año, menos si están lejos en el plan. `cant_estudiantes_afectados` es una fracción ruidosa de los compartidos.
 
@@ -49,10 +55,10 @@ Se eligió **regresión lineal** y no clasificación. El enunciado pedía una de
 Métricas **solo sobre test** (198 pares):
 
 | Métrica | Valor |
-|---------|--------|
-| MAE | 2.36 |
-| RMSE | 4.66 |
-| R² | 0.87 |
+| -------- | ----- |
+| MAE      | 2.36  |
+| RMSE     | 4.66  |
+| R²      | 0.87  |
 
 El MAE se lee como “en promedio nos desviamos ~2.4 estudiantes”. El R² indica que el modelo explica buena parte de la variación del test, coherente con que los afectados sintéticos son aproximadamente una fracción de los estudiantes compartidos.
 
@@ -72,10 +78,10 @@ El umbral está en la misma escala que el modelo (estudiantes afectados), no ent
 Efecto observado sobre los 45 nodos:
 
 | Umbral | Aristas | Turnos |
-|--------|---------|--------|
-| 5 | 257 | 9 |
-| 20 | 114 | 5 |
-| 40 | 31 | 3 |
+| ------ | ------- | ------ |
+| 5      | 257     | 9      |
+| 20     | 114     | 5      |
+| 40     | 31      | 3      |
 
 Subir el umbral recorta conflictos leves: las materias estan mas dispersas y hacen falta menos colores. El costo es ignorar choques más chicos.
 
@@ -107,18 +113,18 @@ Streamlit (`frontend/app.py`):
 
 ## 7. Cómo ejecutar
 
-El detalle está en el [README](README.md). 
+El detalle está en el [README](README.md).
 
-Resumen: 
+Resumen:
 
-Python 3.12, 
-<br>
-`pip install -r requirements.txt`, 
-<br>
-`python dataset.py`, 
-<br>
-`python -m backend.modelo`, 
-<br>
+Python 3.12,
+
+`pip install -r requirements.txt`,
+
+`python dataset.py`,
+
+`python -m backend.modelo`,
+
 `streamlit run frontend/app.py`.
 
 ## 8. Limitaciones
