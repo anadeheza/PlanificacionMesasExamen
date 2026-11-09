@@ -27,9 +27,6 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-      header[data-testid="stHeader"],
-      div[data-testid="stToolbar"],
-      div[data-testid="stDecoration"],
       footer { display: none; }
       .block-container {
         padding-top: 0.6rem !important;
