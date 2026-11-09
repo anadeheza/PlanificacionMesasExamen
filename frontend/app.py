@@ -69,15 +69,20 @@ with tab_cronograma:
     if n_turnos == 0:
         st.info("No hay materias para armar el cronograma.")
     else:
-        st.metric("Turnos necesarios", n_turnos)
         columnas = st.columns(n_turnos)
         for turno, materias in cronograma.items():
             with columnas[turno]:
                 st.markdown(
-                    f"<h3 style='border-bottom: 4px solid {_color_turno(turno)};'>"
-                    f"Turno {turno + 1}</h3>",
+                    f"<h3 style='border-bottom: 4px solid {_color_turno(turno)};"
+                    f"margin:0 0 0.6rem 0;font-size:1.15rem'>Turno {turno + 1}</h3>",
                     unsafe_allow_html=True,
                 )
                 for materia in materias:
-                    st.markdown(f"**{materia['nombre']}**")
-                    st.caption(f"{materia['carrera']} · Año {materia['anio']}")
+                    st.markdown(
+                        f"<div style='margin:0 0 0.9rem 0;line-height:1.2'>"
+                        f"<div style='font-weight:600'>{materia['nombre']}</div>"
+                        f"<div style='font-size:0.8rem;color:#5c6770;margin-top:0.1rem'>"
+                        f"{materia['carrera']} · Año {materia['anio']}</div>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )

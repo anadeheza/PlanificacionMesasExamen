@@ -14,6 +14,31 @@ CARRERAS = [
 ]
 ANIOS = [1, 2, 3, 4, 5]
 
+# Tres materias por año y carrera. El nombre va solo; carrera y año salen aparte en la UI.
+MATERIAS_POR_CARRERA = {
+    "Ingeniería Informática": {
+        1: ["Álgebra I", "Programación I", "Matemática Discreta"],
+        2: ["Programación II", "Arquitectura", "Bases de Datos I"],
+        3: ["Sistemas Operativos", "Redes I", "Algoritmos"],
+        4: ["Ingeniería de Software", "Bases de Datos II", "Inteligencia Artificial"],
+        5: ["Proyecto Final", "Seguridad Informática", "Sistemas Distribuidos"],
+    },
+    "Ingeniería Industrial": {
+        1: ["Álgebra I", "Física I", "Química General"],
+        2: ["Física II", "Análisis Matemático", "Dibujo Técnico"],
+        3: ["Termodinámica", "Mecánica", "Estadística"],
+        4: ["Investigación Operativa", "Economía", "Gestión de Producción"],
+        5: ["Logística", "Calidad Industrial", "Proyecto Industrial"],
+    },
+    "Licenciatura en Sistemas": {
+        1: ["Álgebra", "Introducción a la Programación", "Organización de Computadoras"],
+        2: ["Programación Orientada a Objetos", "Bases de Datos", "Ingeniería de Requisitos"],
+        3: ["Sistemas Operativos", "Redes", "Análisis de Sistemas"],
+        4: ["Gestión de Proyectos", "Minería de Datos", "Interfaces de Usuario"],
+        5: ["Tesina", "Auditoría de Sistemas", "Ética Profesional"],
+    },
+}
+
 
 def generar_datasets():
     """Genera materias.csv y dataset_mesas_examen.csv con semilla fija."""
@@ -25,13 +50,13 @@ def generar_datasets():
     for carrera in CARRERAS:
         for anio in ANIOS:
             # 3 materias por año y carrera
-            for j in range(1, 4):
+            for nombre in MATERIAS_POR_CARRERA[carrera][anio]:
                 materias.append(
                     {
                         "materia_id": f"MAT_{materia_id:03d}",
                         "carrera": carrera,
                         "anio": anio,
-                        "nombre": f"{carrera.split()[0]} - Año {anio} - Mat {j}",
+                        "nombre": nombre,
                     }
                 )
                 materia_id += 1
