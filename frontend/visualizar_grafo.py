@@ -9,6 +9,7 @@ Al cambiar el umbral, el dibujo parte del grafo anterior y se mueve hasta
 el nuevo: los nodos viajan, los bordes cambian de color y las aristas
 aparecen o se desvanecen.
 """
+import colorsys
 import html
 import json
 import math
@@ -22,7 +23,31 @@ _COMPONENTE = components.declare_component(
     path=str(Path(__file__).resolve().parent / "componente_grafo"),
 )
 
-PALETA_TURNO = ["#4C78A8", "#F58518", "#54A24B", "#BF8FF0", "#B279A2"]
+PALETA_TURNO = [
+    "#4C78A8",
+    "#F58518",
+    "#54A24B",
+    "#E45756",
+    "#72B7B2",
+    "#B279A2",
+    "#EECA3B",
+    "#FF9DA6",
+    "#9D755D",
+    "#499894",
+    "#D67195",
+    "#8CD17D",
+]
+
+
+def color_de_turno(turno, paleta=None):
+    """Un color distinto por turno. Los primeros son fijos; el resto no se repite."""
+    paleta = paleta or PALETA_TURNO
+    indice = int(turno)
+    if indice < len(paleta):
+        return paleta[indice]
+    tono = (0.07 + indice * 0.61803398875) % 1
+    rojo, verde, azul = colorsys.hsv_to_rgb(tono, 0.72, 0.78)
+    return "#{:02X}{:02X}{:02X}".format(round(rojo * 255), round(verde * 255), round(azul * 255))
 GROSOR_ARISTA = 2
 TAMANO_PUNTO = 26
 ESPACIO_PUNTOS = 52
@@ -99,7 +124,7 @@ def _escena(grafo, colores, aristas, paleta):
                 "y": y,
                 "w": ancho_nodo,
                 "h": alto_nodo,
-                "color": paleta[turno % len(paleta)],
+                "color": color_de_turno(turno, paleta),
                 "turno": turno,
                 "aislado": grafo.degree(nodo) == 0,
             }

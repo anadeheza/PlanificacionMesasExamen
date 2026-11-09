@@ -11,11 +11,11 @@ if str(RAIZ / "frontend") not in sys.path:
 import streamlit as st
 
 from backend.planificar import planificar
-from visualizar_grafo import PALETA_TURNO, mostrar_grafo
+from visualizar_grafo import color_de_turno, mostrar_grafo
 
 
 def _color_turno(turno):
-    return PALETA_TURNO[turno % len(PALETA_TURNO)]
+    return color_de_turno(turno)
 
 
 st.set_page_config(
@@ -87,7 +87,7 @@ with tab_grafo:
     else:
         if grafo.number_of_edges() == 0:
             st.info("Ningún par llega al umbral. Las materias quedan como nodos aislados.")
-        mostrar_grafo(grafo, colores, pares, PALETA_TURNO)
+        mostrar_grafo(grafo, colores, pares)
         leyenda = "".join(
             f"<span style='display:inline-flex;align-items:center;gap:6px;"
             f"margin-right:14px;font-size:13px;line-height:1'>"
