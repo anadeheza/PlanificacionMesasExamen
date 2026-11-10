@@ -23,31 +23,25 @@ _COMPONENTE = components.declare_component(
     path=str(Path(__file__).resolve().parent / "componente_grafo"),
 )
 
-PALETA_TURNO = [
-    "#4C78A8",
-    "#F58518",
-    "#54A24B",
-    "#E45756",
-    "#72B7B2",
-    "#B279A2",
-    "#EECA3B",
-    "#FF9DA6",
-    "#9D755D",
-    "#499894",
-    "#D67195",
-    "#8CD17D",
-]
+def _color_distinto(indice):
+    """Tono separado por el ángulo de oro y brillo alternado, para que no se confundan."""
+    tono = (indice * 0.61803398875) % 1
+    saturacion, valor = ((0.78, 0.52), (0.58, 0.90), (0.88, 0.70))[indice % 3]
+    rojo, verde, azul = colorsys.hsv_to_rgb(tono, saturacion, valor)
+    return "#{:02X}{:02X}{:02X}".format(round(rojo * 255), round(verde * 255), round(azul * 255))
+
+
+# Con umbral 0 cada materia es su propio turno: hacen falta 45 colores.
+PALETA_TURNO = [_color_distinto(indice) for indice in range(45)]
 
 
 def color_de_turno(turno, paleta=None):
-    """Un color distinto por turno. Los primeros son fijos; el resto no se repite."""
+    """Un color distinto por turno. La paleta cubre las 45 materias."""
     paleta = paleta or PALETA_TURNO
     indice = int(turno)
-    if indice < len(paleta):
+    if 0 <= indice < len(paleta):
         return paleta[indice]
-    tono = (0.07 + indice * 0.61803398875) % 1
-    rojo, verde, azul = colorsys.hsv_to_rgb(tono, 0.72, 0.78)
-    return "#{:02X}{:02X}{:02X}".format(round(rojo * 255), round(verde * 255), round(azul * 255))
+    return _color_distinto(indice)
 GROSOR_ARISTA = 2
 TAMANO_PUNTO = 26
 ESPACIO_PUNTOS = 52
